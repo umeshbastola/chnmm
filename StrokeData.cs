@@ -11,10 +11,10 @@ namespace MultiStrokeGestureRecognitionLib
         public int TraceID { get; }
         public override TrajectoryPoint[] TrajectoryPoints { get; }
 
-        public StrokeData(int user, int trace, string[,] points){
+        public StrokeData(int user, int trace, TrajectoryPoint[] points){
             UserID = user;
             TraceID = trace;
-            TrajectoryPoints = convertPoints(points).ToArray();
+            TrajectoryPoints = points;
         }
 
         public static IEnumerable<TrajectoryPoint> convertPoints(string[,] points)

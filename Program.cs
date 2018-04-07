@@ -14,6 +14,7 @@ namespace MultiStrokeGestureRecognitionLib
     {
         public static void Main (){
             var strokeCollection = new List<KeyValuePair<String, StrokeData>>();
+            var pointsCollection = new Dictionary<String, IEnumerable<TrajectoryPoint>>();
             var param1 = new IntParamVariation("nAreaForStrokeMap", 10, 10, 20);
             var param2 = new DoubleParamVariation("minRadiusArea", 0.01, 0.04, 0.25);
             var param3 = new DoubleParamVariation("toleranceFactorArea", 1.1, 0.4, 2.5);
@@ -42,34 +43,37 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine(ex.ToString());
             }
             NpgsqlCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT * FROM trajectories";
+            command.CommandText = "SELECT * FROM trajectories ORDER BY 5";
             NpgsqlDataReader reader = command.ExecuteReader();
             DataTable dt = new DataTable();
             dt.Load(reader);
+            int maxExec = Convert.ToInt32(dt.Compute("max([exec_num])", string.Empty));
+
 
             foreach (DataRow row in dt.Rows)
             {
-                string[] temp = new string[3];
                 string[,] db_points = row["points"] as string[,];
-                var gestureName = row["user_id"] + "-" + row["gesture_id"] + "-" + row["stroke_seq"];
                 var user = Convert.ToInt32(row["id"]);
                 var trace = Convert.ToInt32(row["stroke_seq"]);
-                var trajectory = new StrokeData(user, trace, db_points);
-                strokeCollection.Add(new KeyValuePair<String, StrokeData>(gestureName, trajectory));
-            }
-
-            var lookup = strokeCollection.ToLookup(kvp => kvp.Key, kvp => kvp.Value);
-            var keys = lookup.Select(g => g.Key).ToList();
-
-            for (int i = 0; i < keys.Count; i++)
-            {
-                List<StrokeData> fingerCollection = new List<StrokeData>();
-                foreach (StrokeData x in lookup[keys[i]])
+                var gestureName = row["user_id"] + "-" + row["gesture_id"] + "-" +row["exec_num"].ToString();
+                var trajectory = StrokeData.convertPoints(db_points);
+                if (pointsCollection.ContainsKey(gestureName))
                 {
-                    fingerCollection.Add(x);
+                    pointsCollection[gestureName] = pointsCollection[gestureName].Concat(trajectory);
                 }
-                cs.trainGesture(keys[i], fingerCollection.Cast<BaseTrajectory>());
+                else
+                {
+                    pointsCollection.Add(gestureName, trajectory);
+                }
             }
+            List<StrokeData> gestureCollection = new List<StrokeData>();
+            foreach (KeyValuePair<String, IEnumerable<TrajectoryPoint>> gesture in pointsCollection)
+            {
+                string[] tokens = gesture.Key.Split('-');
+                var trajectory = new StrokeData(Convert.ToInt32(tokens[0]), Convert.ToInt32(tokens[1]), gesture.Value.ToArray());
+                gestureCollection.Add(trajectory);
+            }
+            cs.trainGesture("ooo", gestureCollection.Cast<BaseTrajectory>());
         }
     }
 }
