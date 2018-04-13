@@ -8,16 +8,27 @@ using ExperimentLib;
 using GestureRecognitionLib.CHnMM.Estimators;
 using System.Linq;
 using System.Collections;
-
+using System.Threading.Tasks;
+using System.Windows.Forms;
 namespace MultiStrokeGestureRecognitionLib
+
 {
     public class Program
     {
-        public static void Main (){
+        public static void Main()
+        {
+            Task mytask = Task.Run(() =>
+            {
+                using (Form form = new Form())
+                {
+                    form.Text = "Hello its for canvas";
+                    form.ShowDialog();
+                }
+            });
             var strokeCollection = new List<StrokeData>();
             var pointsCollection = new List<KeyValuePair<int, string[]>>();
             SortedList mySL = new SortedList();
-            var param1 = new IntParamVariation("nAreaForStrokeMap", 10, 10, 20);
+            var param1 = new IntParamVariation("nAreaForStrokeMap", 100);
             var param2 = new DoubleParamVariation("minRadiusArea", 0.01, 0.04, 0.25);
             var param3 = new DoubleParamVariation("toleranceFactorArea", 1.1, 0.4, 2.5);
             var param5 = new BoolParamVariation("useFixAreaNumber", true);
@@ -45,7 +56,7 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine(ex.ToString());
             }
             NpgsqlCommand command = connection.CreateCommand();
-            command.CommandText = "SELECT * FROM trajectories ORDER BY 5";
+            command.CommandText = "SELECT * FROM trajectories WHERE user_id=1 AND gesture_id=1 AND exec_num<8 ORDER BY 5";
             NpgsqlDataReader reader = command.ExecuteReader();
             DataTable dt = new DataTable();
             dt.Load(reader);
@@ -65,16 +76,17 @@ namespace MultiStrokeGestureRecognitionLib
                     point[4] = row["user_id"].ToString();
                     point[5] = row["gesture_id"].ToString();
                     pointsCollection.Add(new KeyValuePair<int, string[]>(Convert.ToInt32(point[2]), point));
-                 
+
                 }
             }
             pointsCollection.Sort(SortByTime);
             var user_id = pointsCollection.First().Value[4];
             var gesture_id = pointsCollection.First().Value[5];
-            for (int i = 1; i <= maxExec; i++){
+            for (int i = 1; i <= maxExec; i++)
+            {
                 IQueryable<KeyValuePair<int, string[]>> pointsQuery = pointsCollection.AsQueryable();
                 var result = pointsQuery.Where(o => o.Value[3] == i.ToString());
-                var trajectory = new StrokeData(1, i, result.ToList());
+                var trajectory = new StrokeData(Convert.ToInt32(user_id), Convert.ToInt32(result.First().Value[3]), result.ToList());
                 strokeCollection.Add(trajectory);
             }
             cs.trainGesture(user_id + "_" + gesture_id, strokeCollection.Cast<BaseTrajectory>());
