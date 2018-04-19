@@ -34,8 +34,9 @@ namespace MultiStrokeGestureRecognitionLib
             CHnMMClassificationSystem cs = new CHnMMClassificationSystem(configSet[0]);
 
             string ConnectionString = "Server=localhost; Port=5432; User Id=touchy; Password=123456;Database = touchy_data_development";
-            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString);
-            NpgsqlConnection connection_1 = new NpgsqlConnection(ConnectionString);
+            string ConnectionString_heroku = "Database=dcbpejtem8e4qu; Server=ec2-54-75-239-237.eu-west-1.compute.amazonaws.com; Port=5432; User Id=pbcgcsyjsmpeds; Password=323743a3eec80c0a49dcee493617af7b94fee458a6a89a671dc3acaad0c3f437; Sslmode=Require;Trust Server Certificate=true";
+            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString_heroku);
+            NpgsqlConnection connection_1 = new NpgsqlConnection(ConnectionString_heroku);
             try
             {
                 connection.Open();
@@ -46,7 +47,7 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine(ex.ToString());
             }
             NpgsqlCommand waiting = connection_1.CreateCommand();
-            waiting.CommandText = "SELECT * FROM gestures WHERE verified='0'";
+            waiting.CommandText = "SELECT * FROM geslogs WHERE verified='0'";
             NpgsqlDataReader wList = waiting.ExecuteReader();
             while (wList.Read())
             {
@@ -119,13 +120,13 @@ namespace MultiStrokeGestureRecognitionLib
                 if (ok)
                 {
                     Console.WriteLine(" Gesture matches!");
-                    insertion.CommandText = "UPDATE gestures SET verified=1 WHERE user_id=" + wList.GetValue(1);
+                    insertion.CommandText = "UPDATE geslogs SET verified=1 WHERE user_id=" + wList.GetValue(1);
                     insertion.ExecuteNonQuery();
                 }
                 else
                 {
                     Console.WriteLine(" Gesture does not match!");
-                    insertion.CommandText = "UPDATE gestures SET verified=2 WHERE user_id=" + wList.GetValue(1);
+                    insertion.CommandText = "UPDATE geslogs SET verified=2 WHERE user_id=" + wList.GetValue(1);
                     insertion.ExecuteNonQuery();
                 }
             }
