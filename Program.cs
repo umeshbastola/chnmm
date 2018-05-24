@@ -15,9 +15,9 @@ namespace MultiStrokeGestureRecognitionLib
         public static void Main()
         {
             var strokeCollection = new List<KeyValuePair<String, StrokeData>>();
-            var param1 = new IntParamVariation("nAreaForStrokeMap", 20);
+            var param1 = new IntParamVariation("nAreaForStrokeMap", 10);
             var param2 = new DoubleParamVariation("minRadiusArea", 0.01);
-            var param3 = new DoubleParamVariation("toleranceFactorArea", 1.5);
+            var param3 = new DoubleParamVariation("toleranceFactorArea", 1.3);
             var param5 = new BoolParamVariation("useFixAreaNumber", true);
             var param6 = new BoolParamVariation("useSmallestCircle", true);
             var param7 = new BoolParamVariation("isTranslationInvariant", false);
@@ -25,7 +25,8 @@ namespace MultiStrokeGestureRecognitionLib
             var param9 = new DoubleParamVariation("hitProbability", 0.9);
             var param10 = new StringParamVariation("distEstName", new string[]
             {
-                nameof(NormalEstimator)
+                nameof(NaiveUniformEstimator)
+                //nameof(NormalEstimator)
             });
 
             var param11 = new BoolParamVariation("useEllipsoid", false);
@@ -45,7 +46,7 @@ namespace MultiStrokeGestureRecognitionLib
             }
             NpgsqlCommand command = connection.CreateCommand();
             var global_user = 1;
-            command.CommandText = "SELECT * FROM trajectories WHERE user_id="+global_user+ "AND exec_num % 2 = 0";
+            command.CommandText = "SELECT * FROM trajectories WHERE user_id="+global_user+ "AND exec_num % 2 = 1";
             NpgsqlDataReader reader = command.ExecuteReader();
             DataTable dt = new DataTable();
             dt.Load(reader);
@@ -102,9 +103,11 @@ namespace MultiStrokeGestureRecognitionLib
             }
             result  = result.OrderBy(x => x.Key).ThenBy(x => x.Value).ToList();
             var matching = "";
-            int stroke_match = 0;
-            var missed = -1;
-            var false_user = 1;
+            int stroke_match = -1;
+            var total_missed = 0;
+            var ges_miss = 0;
+            var false_user = 0;
+            var prev_ges = "";
             for (int i = 1; i < result.Count; i++)
             {
                 var current = result[i].Value.Split('-');
@@ -117,18 +120,20 @@ namespace MultiStrokeGestureRecognitionLib
                 if (current_exec != prev_exec)
                 {
                     var total_strokes = (Convert.ToInt32(previous[3].Split(':')[0]));
-                    if (current_user == global_user.ToString() && stroke_match <= (total_strokes-1))
+
+                    if (current_user == global_user.ToString() && stroke_match < total_strokes)
                     {
-                        missed++;
+                        ges_miss++;
+                        total_missed++;
                         Console.WriteLine(prev_exec);
-                    }else if(current_user != global_user.ToString() && stroke_match > (total_strokes-1)){
+                    }else if(current_user != global_user.ToString() && stroke_match == total_strokes){
                         false_user++;
                     }
-                    if (stroke_match > (total_strokes-1))
+                    if (stroke_match == total_strokes)
                     {
                         Console.WriteLine(matching);
                     }
-                    stroke_match = 0;
+                    stroke_match = -1;
                     matching = "";
                     prev_exec = current_exec;
                 }
@@ -137,8 +142,15 @@ namespace MultiStrokeGestureRecognitionLib
                     stroke_match++;
                     matching = result[i].Value;
                 }
+                if (current_user == global_user.ToString() && current[1] != prev_ges)
+                {
+                    Console.WriteLine("############################################" + previous[1] + ":" + ges_miss);
+                    prev_ges = current[1];
+                    ges_miss = 0;
+                }
             }
-            Console.WriteLine(missed+ " -"+ false_user);
+            Console.WriteLine("############################################" + ":" + ges_miss);
+            Console.WriteLine(total_missed+ " -"+ false_user);
         }
     }
 }
