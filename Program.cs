@@ -151,6 +151,121 @@ namespace MultiStrokeGestureRecognitionLib
             }
             Console.WriteLine("############################################" + ":" + ges_miss);
             Console.WriteLine(total_missed+ " -"+ false_user);
-        }
+
+    //        var strokeCollection = new List<KeyValuePair<String, StrokeData>>();
+    //        var param1 = new IntParamVariation("nAreaForStrokeMap", 10);
+    //        var param2 = new DoubleParamVariation("minRadiusArea", 0.01);
+    //        var param3 = new DoubleParamVariation("toleranceFactorArea", 1.7);
+    //        var param5 = new BoolParamVariation("useFixAreaNumber", true);
+    //        var param6 = new BoolParamVariation("useSmallestCircle", true);
+    //        var param7 = new BoolParamVariation("isTranslationInvariant", false);
+    //        var param8 = new BoolParamVariation("useAdaptiveTolerance", false);
+    //        var param9 = new DoubleParamVariation("hitProbability", 0.9);
+    //        var param10 = new StringParamVariation("distEstName", new string[]
+    //        {
+    //            nameof(NaiveUniformEstimator)
+    //            //nameof(NormalEstimator)
+    //        });
+
+    //        var param11 = new BoolParamVariation("useEllipsoid", false);
+    //        var configSet = ParameterVariation.getParameterVariations(param1, param2, param3, param5, param6, param7, param8, param9, param10, param11).Select(ps => new CHnMMParameter(ps)).ToArray();
+    //        CHnMMClassificationSystem cs = new CHnMMClassificationSystem(configSet[0]);
+
+    //        string ConnectionString = "Server=localhost; Port=5432; User Id=touchy; Password=123456;Database = touchy_data_development";
+    //        string ConnectionString_heroku = "Database=dcbpejtem8e4qu; Server=ec2-54-75-239-237.eu-west-1.compute.amazonaws.com; Port=5432; User Id=pbcgcsyjsmpeds; Password=323743a3eec80c0a49dcee493617af7b94fee458a6a89a671dc3acaad0c3f437; Sslmode=Require;Trust Server Certificate=true";
+    //        NpgsqlConnection connection = new NpgsqlConnection(ConnectionString_heroku);
+    //        try
+    //        {
+    //            connection.Open();
+    //        }
+    //        catch (Exception ex)
+    //        {
+    //            Console.WriteLine(ex.ToString());
+    //        }
+    //        NpgsqlCommand command = connection.CreateCommand();
+    //        command.CommandText = "SELECT * FROM trajectories WHERE gesture_id =1 AND exec_num % 2 = 1";
+    //        NpgsqlDataReader reader = command.ExecuteReader();
+    //        DataTable dt = new DataTable();
+    //        dt.Load(reader);
+    //        var trainingSet = dt.Select("exec_num < 21");
+
+    //        foreach (DataRow row in trainingSet)
+    //        {
+    //            string[,] db_points = row["points"] as string[,];
+    //            var gestureName = row["user_id"]+ "-"+ row["gesture_id"] + ":" + row["stroke_seq"];
+    //            var user = Convert.ToInt32(row["id"]);
+    //            var trace = Convert.ToInt32(row["stroke_seq"]);
+    //            var trajectory = new StrokeData(user, trace, db_points);
+    //            strokeCollection.Add(new KeyValuePair<String, StrokeData>(gestureName, trajectory));
+    //        }
+
+    //        var lookup = strokeCollection.ToLookup(kvp => kvp.Key, kvp => kvp.Value);
+    //        var keys = lookup.Select(g => g.Key).ToList();
+    //        for (int i = 0; i < keys.Count; i++)
+    //        {
+    //            List<StrokeData> fingerCollection = new List<StrokeData>();
+    //            foreach (StrokeData x in lookup[keys[i]])
+    //            {
+    //                fingerCollection.Add(x);
+    //            }
+    //            cs.trainGesture(keys[i], fingerCollection.Cast<BaseTrajectory>());
+    //        }
+    //        command.CommandText = "SELECT * FROM trajectories WHERE gesture_id = 1 AND user_id = 9 AND exec_num % 2 = 0";
+    //        NpgsqlDataReader read = command.ExecuteReader();
+    //        DataTable dv = new DataTable();
+    //        dv.Load(read);
+    //        int maxstroke = (int)dv.Compute("MAX([stroke_seq])", ""); 
+    //        var testSet = dv.Select("exec_num >= 1");
+    //        var recognized = new List<KeyValuePair<string, double>>();
+    //        var result = new List<KeyValuePair<string, double>>();
+    //        var current_exec = 1;
+    //        var match = false;
+    //        foreach (DataRow row in testSet)
+    //        {
+    //            if(current_exec != Convert.ToInt32(row["exec_num"])){
+    //                var sum = new Dictionary<string, double>();
+    //                recognized.Sort(CompareName);
+    //                foreach (var pair in recognized)
+    //                {
+    //                    result.Add(new KeyValuePair<string, double>(pair.Key.Split(':')[0],pair.Value));
+    //                }
+    //                var comp  = result.ToLookup(pair => pair.Key, pair => pair.Value);
+    //                var keyset = comp.Select(g => g.Key).ToList();
+    //                for (int i = 0; i < keyset.Count; i++)
+    //                {
+    //                    if(comp[keyset[i]].Count() > maxstroke){
+    //                        sum[keyset[i]] = 0;
+    //                        foreach (var x in comp[keyset[i]])
+    //                        {
+    //                            sum[keyset[i]] += x;
+    //                        }
+    //                    }
+    //                    match = true;
+    //                }
+    //                var ordered = sum.OrderBy(x => x.Value);
+    //                foreach(var data in sum){
+    //                    Console.WriteLine(data.Key+ " : " +data.Value);
+    //                }
+    //                Console.WriteLine("=================="+Convert.ToInt32(row["exec_num"]));
+    //                recognized.Clear();
+    //                result.Clear();
+    //                current_exec = Convert.ToInt32(row["exec_num"]);
+    //            }
+    //            if (!match)
+    //                Console.WriteLine("No match found");
+    //            string[,] db_points = row["points"] as string[,];
+    //            var user = Convert.ToInt32(row["id"]);
+    //            var trace = Convert.ToInt32(row["stroke_seq"]);
+    //            var trajectory = new StrokeData(user, trace, db_points);
+    //            recognized.AddRange(cs.recognizeMultiStroke(trajectory));
+    //        }
+
+    //    }
+    //    static int CompareName(KeyValuePair<string, double> a, KeyValuePair<string, double> b)
+    //    {
+    //        return a.Key.CompareTo(b.Key);
+    //    }
+
+        
     }
 }
