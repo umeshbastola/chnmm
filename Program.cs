@@ -33,8 +33,8 @@ namespace MultiStrokeGestureRecognitionLib
 
             var param11 = new BoolParamVariation("useEllipsoid", false);
             var configSet = ParameterVariation.getParameterVariations(param1, param2, param3, param5, param6, param7, param8, param9, param10, param11).Select(ps => new CHnMMParameter(ps)).ToArray();
-            //int[] users = { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
-            int[] users = { 9 };
+            int[] users = { 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+            //int[] users = { 12 };
             string ConnectionString = "Server=localhost; Port=5432; User Id=touchy; Password=123456;Database = touchy_data_development";
             string ConnectionString_heroku = "Database=dcbpejtem8e4qu; Server=ec2-54-75-239-237.eu-west-1.compute.amazonaws.com; Port=5432; User Id=pbcgcsyjsmpeds; Password=323743a3eec80c0a49dcee493617af7b94fee458a6a89a671dc3acaad0c3f437; Sslmode=Require;Trust Server Certificate=true";
             NpgsqlConnection connection = new NpgsqlConnection(ConnectionString_heroku);
@@ -179,18 +179,17 @@ namespace MultiStrokeGestureRecognitionLib
             DataTable gesture_table = new DataTable();
             gesture_table.Load(ges_read);
             ges_read.Close();
-
-            //foreach (var set in configSet)
-            //{
+            foreach (var set in configSet)
+            {
                 var file_name = "../../recognition/";
-                //file_name += "tol_" + set.toleranceFactorArea;
-                //file_name += "_dist_" + set.distEstName;
-                //file_name += "_nArea_" + set.nAreaForStrokeMap;
-                //file_name += ".csv";
+                file_name += "tol_" + set.toleranceFactorArea;
+                file_name += "_dist_" + set.distEstName;
+                file_name += "_nArea_" + set.nAreaForStrokeMap;
+                file_name += ".csv";
                 Console.WriteLine(file_name);
                 System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
-            CHnMMClassificationSystem cs = new CHnMMClassificationSystem(configSet[0]);
+            CHnMMClassificationSystem cs = new CHnMMClassificationSystem(set);
                 command.CommandText = "SELECT * FROM trajectories WHERE exec_num % 2 = 1";
                 NpgsqlDataReader reader = command.ExecuteReader();
                 DataTable dt = new DataTable();
@@ -219,9 +218,12 @@ namespace MultiStrokeGestureRecognitionLib
                 }
                 foreach (int global_user in users)
                 {
+                    int[] true_reject = new int[gesture_table.Rows.Count];
+                    int[] false_accept = new int[gesture_table.Rows.Count];
+                    int[] true_accept = new int[gesture_table.Rows.Count];
                     foreach (DataRow gesture in gesture_table.Rows)
                     {
-                        command.CommandText = "SELECT * FROM trajectories WHERE gesture_id =" + gesture["id"] + " AND user_id =" + global_user + " AND exec_num % 2 = 0";
+                    command.CommandText = "SELECT * FROM trajectories WHERE gesture_id =" + gesture["id"] + " AND user_id =" + global_user + " AND exec_num % 2 = 0 order by exec_num";
                         NpgsqlDataReader read = command.ExecuteReader();
                         DataTable dv = new DataTable();
                         dv.Load(read);
@@ -253,11 +255,20 @@ namespace MultiStrokeGestureRecognitionLib
                                     }
                                 }
                                 var ordered = sum.OrderByDescending(x => x.Value);
-                                foreach (var data in ordered)
+                                if (ordered.Count() > 0)
                                 {
-                                    Console.WriteLine(data.Key + " : " + data.Value);
+                                    if (ordered.First().Key == global_user + "-" + gesture["id"])
+                                        true_accept[Convert.ToInt32(gesture["id"]) - 1] += 1;
+                                    else
+                                        false_accept[Convert.ToInt32(gesture["id"]) - 1] += 1;
                                 }
-                                
+                                else
+                                    true_reject[Convert.ToInt32(gesture["id"]) - 1] += 1;
+
+                                //foreach (var data in ordered)
+                                //{
+                                //    Console.WriteLine(data.Key + " : " + data.Value);
+                                //}
                                 recognized.Clear();
                                 result.Clear();
                                 current_exec = Convert.ToInt32(row["exec_num"]);
@@ -269,18 +280,26 @@ namespace MultiStrokeGestureRecognitionLib
                             recognized.AddRange(cs.recognizeMultiStroke(trajectory));
                         }
                     }
-                    //sb.AppendLine("a");
-                    //sb.AppendLine("b");
-                    //sb.AppendLine("");
-                    //strokeCollection.Clear();
+                    string true_acception = string.Join(",", true_accept);
+                    string true_rejection = string.Join(",", true_reject);
+                    string false_acception = string.Join(",", false_accept);
+                    //Console.WriteLine(true_acception);
+                    //Console.WriteLine(true_rejection);
+                    //Console.WriteLine(false_acception);
+                    sb.AppendLine(true_acception);
+                    sb.AppendLine(true_rejection);
+                    sb.AppendLine(false_acception);
+                    sb.AppendLine("");
+                    strokeCollection.Clear();
+
                 }
-                //File.WriteAllText(file_name, sb.ToString());
+                File.WriteAllText(file_name, sb.ToString());
             }
 
-        //}
-        static int CompareName(KeyValuePair<string, double> a, KeyValuePair<string, double> b)
-        {
-            return a.Key.CompareTo(b.Key);
+            }
+            static int CompareName(KeyValuePair<string, double> a, KeyValuePair<string, double> b)
+            {
+                return a.Key.CompareTo(b.Key);
+            }
         }
     }
-}
