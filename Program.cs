@@ -47,6 +47,10 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine(ex.ToString());
             }
             NpgsqlCommand command = connection.CreateCommand();
+
+            //#########################################################
+                            //AUTHENTICATION TASK//
+            //#########################################################
             //foreach (var set in configSet)
             //{
             //    var file_name = "../../csv/";
@@ -171,7 +175,7 @@ namespace MultiStrokeGestureRecognitionLib
             //Console.WriteLine("finished for all");
 
             //#########################################################
-            //RECOGNITION TASK//
+                            //RECOGNITION TASK//
             //#########################################################
 
             //command.CommandText = "SELECT id FROM tgestures";
@@ -299,62 +303,65 @@ namespace MultiStrokeGestureRecognitionLib
             //}
 
             //#########################################################
-            //TRANSFORMATION FOR $N //
+                            //TRANSFORMATION FOR $N //
             //#########################################################
 
-            command.CommandText = "SELECT * FROM trajectories ORDER BY exec_num";
-            NpgsqlDataReader all_gesture = command.ExecuteReader();
-            DataTable gesture_table = new DataTable();
-            gesture_table.Load(all_gesture);
-            all_gesture.Close();
-            var prev_exec = 1;
-            var prev_user = 1;
-            var prev_gesture = 1;
-            int num_points = 0;
-            int total_time = 0;
-            string point_string = "";
+            //command.CommandText = "SELECT * FROM trajectories ORDER BY exec_num";
+            //NpgsqlDataReader all_gesture = command.ExecuteReader();
+            //DataTable gesture_table = new DataTable();
+            //gesture_table.Load(all_gesture);
+            //all_gesture.Close();
+            //var prev_exec = 1;
+            //var prev_user = 1;
+            //var prev_gesture = 1;
+            //int num_points = 0;
+            //int total_time = 0;
+            //string point_string = "";
 
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach(var user in users){
-                for (int gesture_id = 1; gesture_id < 15; gesture_id++)
-                {
-                    var one_gesture_data = gesture_table.Select("user_id = " + user + " AND gesture_id ="+ gesture_id);
-                    foreach(var row in one_gesture_data){
-                        if((int)row["exec_num"] != prev_exec){
-                            string header = "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n";
-                            header += "<Gesture Name ='" + prev_user + "_" + prev_gesture + "_" + prev_exec;
-                            header += "' Subject = 'test'  Speed = 'test' ";
-                            header += "NumPts = '"+num_points+"' Milliseconds = '"+total_time+"' AppName = 'Recognizer.NDollar' AppVer = '8.1.2012.0' Date = '"+DateTime.Now.ToShortDateString()+"' TimeOfDay = '" + DateTime.Now.ToShortTimeString() + "' >\n";
-                            var file_name = "../../dollar_n_format/" + prev_user + "_" + prev_gesture + "_"+ prev_exec+".xml";
-                            Console.WriteLine(file_name);
-                            sb.AppendLine(header);
-                            sb.AppendLine(point_string);
-                            sb.AppendLine("</Gesture>");
-                            File.WriteAllText(file_name, sb.ToString());
-                            prev_exec = (int)row["exec_num"];
-                            prev_user = user;
-                            prev_gesture = gesture_id;
-                            num_points = 0;
-                            total_time = 0;
-                            point_string = "";
-                            sb.Clear();
-                        }
-                        string[,] db_points = row["points"] as string[,];
-                        int last_time = 0;
-                        int rowLength = db_points.GetLength(0);
-                        point_string += "<Stroke index = '" + ((int)row["stroke_seq"] + 1) + "' >\n";
-                        for (int i = 0; i < rowLength-1; i++)
-                        {
-                            num_points++;
-                            point_string += "<Point X='"+db_points[i, 0]+"' Y='"+db_points[i, 1]+"' T='"+db_points[i, 2]+"' />\n";
-                            last_time = Convert.ToInt32(db_points[i,2]);
-                        }
-                        point_string += "</stroke>\n";
-                        if (last_time > total_time)
-                            total_time = last_time;
-                    }
-                }
-            }
+            //System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            //foreach(var user in users){
+            //    for (int gesture_id = 1; gesture_id < 15; gesture_id++)
+            //    {
+            //        var one_gesture_data = gesture_table.Select("user_id = " + user + " AND gesture_id ="+ gesture_id);
+            //        foreach(var row in one_gesture_data){
+            //            if((int)row["exec_num"] != prev_exec){
+            //                string header = "<?xml version='1.0' encoding='utf-8' standalone='yes'?>\n";
+            //                header += "<Gesture Name ='" + prev_user + "_" + prev_gesture + "_" + prev_exec;
+            //                header += "' Subject = 'test'  Speed = 'test' ";
+            //                header += "NumPts = '"+num_points+"' Milliseconds = '"+total_time+"' AppName = 'Recognizer.NDollar' AppVer = '8.1.2012.0' Date = '"+DateTime.Now.ToShortDateString()+"' TimeOfDay = '" + DateTime.Now.ToShortTimeString() + "' >\n";
+            //                var file_name = "../../dollar_n_format/" + prev_user + "_" + prev_gesture + "_"+ prev_exec+".xml";
+            //                Console.WriteLine(file_name);
+            //                sb.AppendLine(header);
+            //                sb.AppendLine(point_string);
+            //                sb.AppendLine("</Gesture>");
+            //                File.WriteAllText(file_name, sb.ToString());
+            //                prev_exec = (int)row["exec_num"];
+            //                prev_user = user;
+            //                prev_gesture = gesture_id;
+            //                num_points = 0;
+            //                total_time = 0;
+            //                point_string = "";
+            //                sb.Clear();
+            //            }
+            //            string[,] db_points = row["points"] as string[,];
+            //            int last_time = 0;
+            //            int rowLength = db_points.GetLength(0);
+            //            point_string += "<Stroke index = '" + ((int)row["stroke_seq"] + 1) + "' >\n";
+            //            for (int i = 0; i < rowLength-1; i++)
+            //            {
+            //                num_points++;
+            //                point_string += "<Point X='"+db_points[i, 0]+"' Y='"+db_points[i, 1]+"' T='"+db_points[i, 2]+"' />\n";
+            //                last_time = Convert.ToInt32(db_points[i,2]);
+            //            }
+            //            point_string += "</stroke>\n";
+            //            if (last_time > total_time)
+            //                total_time = last_time;
+            //        }
+            //    }
+            //}
+            //#########################################################
+                        //END OF TRANSFORMATION FOR $N //
+            //#########################################################
         }
         static int CompareName(KeyValuePair<string, double> a, KeyValuePair<string, double> b)
         {
