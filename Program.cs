@@ -15,9 +15,9 @@ namespace MultiStrokeGestureRecognitionLib
         public static void Main()
         {
             var strokeCollection = new List<KeyValuePair<String, StrokeData>>();
-            var param1 = new IntParamVariation("nAreaForStrokeMap", 10, 10, 20);
+            var param1 = new IntParamVariation("nAreaForStrokeMap", 10, 5, 20);
             var param2 = new DoubleParamVariation("minRadiusArea", 0.01, 0.04, 0.25);
-            var param3 = new DoubleParamVariation("toleranceFactorArea", 1.1, 0.4, 2.5);
+            var param3 = new DoubleParamVariation("toleranceFactorArea", 1.7, 0.4, 2.5);
             var param5 = new BoolParamVariation("useFixAreaNumber", true);
             var param6 = new BoolParamVariation("useSmallestCircle", true);
             var param7 = new BoolParamVariation("isTranslationInvariant", true);
@@ -33,10 +33,10 @@ namespace MultiStrokeGestureRecognitionLib
             var configSet = ParameterVariation.getParameterVariations(param1, param2, param3, param5, param6, param7, param8, param9, param10, param11).Select(ps => new CHnMMParameter(ps)).ToArray();
             CHnMMClassificationSystem cs = new CHnMMClassificationSystem(configSet[0]);
 
-            string ConnectionString = "Server=localhost; Port=5432; User Id=touchy; Password=123456;Database = touchy_data_development";
+            string ConnectionString = "Server=localhost; Port=5432; User Id=macbook; Database = touchy_data_development";
             string ConnectionString_heroku = "Database=dcbpejtem8e4qu; Server=ec2-54-75-239-237.eu-west-1.compute.amazonaws.com; Port=5432; User Id=pbcgcsyjsmpeds; Password=323743a3eec80c0a49dcee493617af7b94fee458a6a89a671dc3acaad0c3f437; Sslmode=Require;Trust Server Certificate=true";
-            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString_heroku);
-            NpgsqlConnection connection_1 = new NpgsqlConnection(ConnectionString_heroku);
+            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString);
+            NpgsqlConnection connection_1 = new NpgsqlConnection(ConnectionString);
             try
             {
                 connection.Open();
@@ -47,21 +47,13 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine(ex.ToString());
             }
             NpgsqlCommand waiting = connection_1.CreateCommand();
-            waiting.CommandText = "SELECT * FROM geslogs WHERE verified='0'";
+            waiting.CommandText = "SELECT * FROM geslogs WHERE verified=0";
             NpgsqlDataReader wList = waiting.ExecuteReader();
             while (wList.Read())
             {
+                
                 NpgsqlCommand command = connection.CreateCommand();
-                command.CommandText = "SELECT DISTINCT gesture_id FROM trajectories WHERE user_id=" + wList.GetValue(1) + " AND is_password = '1'";
-                NpgsqlDataReader gesture_id = command.ExecuteReader();
-                DataTable dg = new DataTable();
-                dg.Load(gesture_id);
-                var gPid = 0;
-                foreach (DataRow row in dg.Rows)
-                {
-                    gPid = Convert.ToInt32(row["gesture_id"]);
-                }
-                command.CommandText = "SELECT * FROM trajectories WHERE user_id=" + wList.GetValue(1) + " AND gesture_id=" + gPid;
+                command.CommandText = "SELECT * FROM trajectories WHERE user_id=" + wList.GetValue(1) + " AND gesture_id=0";
                 NpgsqlDataReader reader = command.ExecuteReader();
                 DataTable dt = new DataTable();
                 dt.Load(reader);
