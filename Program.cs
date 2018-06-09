@@ -32,9 +32,9 @@ namespace MultiStrokeGestureRecognitionLib
 
             var param11 = new BoolParamVariation("useEllipsoid", false);
             var configSet = ParameterVariation.getParameterVariations(param1, param2, param3, param5, param6, param7, param8, param9, param10, param11).Select(ps => new CHnMMParameter(ps)).ToArray();
-            string ConnectionString = "Server=localhost; Port=5432; User Id=umesh; Password=123456;Database = touchy_data_development";
+            string ConnectionString = "Server=localhost; Port=5432; User Id=macbook; Database = touchy_data_development";
             string ConnectionString_heroku = "Database=dcbpejtem8e4qu; Server=ec2-54-75-239-237.eu-west-1.compute.amazonaws.com; Port=5432; User Id=pbcgcsyjsmpeds; Password=323743a3eec80c0a49dcee493617af7b94fee458a6a89a671dc3acaad0c3f437; Sslmode=Require;Trust Server Certificate=true";
-            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString_heroku);
+            NpgsqlConnection connection = new NpgsqlConnection(ConnectionString);
             try
             {
                 connection.Open();
@@ -57,7 +57,7 @@ namespace MultiStrokeGestureRecognitionLib
             //    file_name += ".csv";
             //    Console.WriteLine(file_name);
             //System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            //foreach (int global_user in users)
+            //    for(int global_user = 1; global_user < 12; global_user++)
             //{
             //    CHnMMClassificationSystem cs = new CHnMMClassificationSystem(set);
             //    command.CommandText = "SELECT * FROM trajectories WHERE user_id=" + global_user + "AND exec_num % 2 = 1";
@@ -160,9 +160,9 @@ namespace MultiStrokeGestureRecognitionLib
             //        }
             //    }
 
-            //    string true_rejection = string.Join(",", ges_miss);
+            //    string false_rejection = string.Join(",", ges_miss);
             //    string false_acceptence = string.Join(",", false_users);
-            //    sb.AppendLine(true_rejection);
+            //    sb.AppendLine(false_rejection);
             //    sb.AppendLine(false_acceptence);
             //    sb.AppendLine("");
             //    strokeCollection.Clear();
