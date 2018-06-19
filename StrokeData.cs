@@ -8,27 +8,26 @@ namespace MultiStrokeGestureRecognitionLib
     public class StrokeData : BaseTrajectory
     {
         public int UserID { get; }
-        public int TraceID { get; }
         public override TrajectoryPoint[] TrajectoryPoints { get; }
 
-        public StrokeData(int user, int trace, string[,] points){
+        public StrokeData(int user, List<int[]> points)
+        {
             UserID = user;
-            TraceID = trace;
             TrajectoryPoints = convertPoints(points).ToArray();
         }
 
-        public static IEnumerable<TrajectoryPoint> convertPoints(string[,] points)
+
+        public static IEnumerable<TrajectoryPoint> convertPoints(List<int[]> points)
         {
-            int rowLength = points.GetLength(0);
-            for (int i = 0; i < rowLength; i++)
+            foreach (var point in points)
             {
-                int x = Convert.ToInt32(points[i,0]);
-                int y = Convert.ToInt32(points[i,1]);
-                long t = Convert.ToInt64(points[i,2]);
+                int x = point[0];
+                int y = point[1];
+                long t = point[2];
+                int seq = point[3];
                 double dx = x;
                 double dy = y;
-
-                yield return new TrajectoryPoint(dx, dy, t);
+                yield return new TrajectoryPoint(dx, dy, t, seq);
             }
         }
     }
