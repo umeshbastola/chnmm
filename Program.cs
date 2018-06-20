@@ -67,7 +67,7 @@ namespace MultiStrokeGestureRecognitionLib
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
 
             CHnMMClassificationSystem cs = new CHnMMClassificationSystem(set);
-            for (int global_user = 1; global_user < 2; global_user++)
+            for (int global_user = 1; global_user < 12; global_user++)
             {
                 foreach (DataRow gesture in gesture_table.Rows)
                 {
@@ -116,8 +116,6 @@ namespace MultiStrokeGestureRecognitionLib
                     }
                     var gestureName = global_user + "-" + gesture["id"];
                     cs.trainGesture(gestureName, gestureStrokes.Cast<BaseTrajectory>());
-                    Console.WriteLine("=============================================================================\n");
-                    Console.WriteLine("=============================================================================");
                 }
 
             }
@@ -125,20 +123,19 @@ namespace MultiStrokeGestureRecognitionLib
             //==============================================================================
             //=================================RECOGNITION START============================
 
-            for (int global_user = 1; global_user < 2; global_user++)
+            for (int global_user = 1; global_user < 12; global_user++)
             {
                 Console.WriteLine("User=========================================================" + global_user);
                 foreach (DataRow gesture in gesture_table.Rows)
                 {
                     List<List<int[]>> allStrokes = new List<List<int[]>>();
-                    command.CommandText = "SELECT * FROM trajectories WHERE user_id = " + global_user + " AND gesture_id=" + gesture["id"] + " AND exec_num % 2 = 0 ORDER BY exec_num, stroke_seq;";
+                    command.CommandText = "SELECT * FROM trajectories WHERE user_id = " + global_user + " AND gesture_id=" + gesture["id"] + " AND exec_num % 2 = 0 ORDER BY exec_num,stroke_seq";
                     NpgsqlDataReader reader = command.ExecuteReader();
                     DataTable dt = new DataTable();
                     dt.Load(reader);
                     reader.Close();
                     int maxstroke = (int)dt.Compute("MAX([stroke_seq])", "") + 1;
-                    int[] stroke_count = Enumerable.Range(0, maxstroke).ToArray();
-                    var prev_exec = 2;
+                    var prev_exec = (int)dt.Rows[0]["exec_num"];
                     var prev_stroke = 0;
 
 
@@ -147,7 +144,7 @@ namespace MultiStrokeGestureRecognitionLib
                         var accumulate = new List<int[]>();
                         if (prev_exec != Convert.ToInt32(row["exec_num"]))
                         {
-                            calculate_result(stroke_count, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
+                            calculate_result(maxstroke, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
                             prev_exec = Convert.ToInt32(row["exec_num"]);
                             allStrokes.Clear();
                         }
@@ -168,7 +165,7 @@ namespace MultiStrokeGestureRecognitionLib
                     }
                     if (allStrokes.Count > 0)
                     {
-                        calculate_result(stroke_count, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
+                        calculate_result(maxstroke, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
                     }
                 }
             }
@@ -181,64 +178,61 @@ namespace MultiStrokeGestureRecognitionLib
                     (t1, t2) => t1.Concat(new T[] { t2 }));
         }
 
-        static public void calculate_result(int[] stroke_count, List<List<int[]>> allStrokes, int global_user, int gesture, CHnMMParameter set, CHnMMClassificationSystem cs)
+        static public void calculate_result(int max_stroke, List<List<int[]>> allStrokes, int global_user, int gesture, CHnMMParameter set, CHnMMClassificationSystem cs)
         {
+            int[] stroke_count = Enumerable.Range(0, allStrokes.Count).ToArray();
             var time_lapse = 0;
-            int[] optimal_length = new int[stroke_count.Length];
             List<List<int>> possible_combinations = new List<List<int>>();
-            for (int i = 0; i < stroke_count.Length; i++)
+            for (int i = 0; i < max_stroke; i++)
             {
                 var trajectory = new StrokeData(global_user, allStrokes[i]);
                 var current_length = cs.checkFeasibility(trajectory, set.nAreaForStrokeMap);
-                if (current_length > optimal_length[i])
-                {
+                if (current_length > 0)
                     possible_combinations.Add(new List<int> { i });
-                    optimal_length[i] = current_length;
-                }
             }
             if (possible_combinations.Count > 0)
             {
-                foreach (var comb in possible_combinations)
+
+
+                for (int comb = 0; comb < possible_combinations.Count; comb++)
                 {
-                    for (int i = 0; i < stroke_count.Length; i++)
+                    for (int i = 0; i < max_stroke; i++)
                     {
-                        List<int[]> best_combination = new List<int[]>();
-                        for (int p = 0; p < comb.Count; p++)
-                            best_combination.AddRange(allStrokes[comb[p]]);
-                        if (!comb.Contains(i))
+                    List<int[]> best_combination = new List<int[]>();
+                        var strech = new List<int>();
+                        for (int p = 0; p < possible_combinations[comb].Count; p++)
+                        {
+                            best_combination.AddRange(allStrokes[possible_combinations[comb][p]]);
+                            strech.Add(possible_combinations[comb][p]);
+                        }
+                        if (!possible_combinations[comb].Contains(i))
                         {
                             best_combination.AddRange(allStrokes[i]);
                             var trajectory = new StrokeData(global_user, best_combination);
                             var current_length = cs.checkFeasibility(trajectory, set.nAreaForStrokeMap);
-                            var target_index = possible_combinations.IndexOf(comb);
-                            if (current_length > optimal_length[target_index])
-                            {
-                                comb.Add(i);
-                                optimal_length[target_index] = current_length;
+                            if (current_length > possible_combinations[comb].Count){
+                                strech.Add(i);
+                                possible_combinations.Add(strech);
                             }
-                            else
-                            {
-                                Console.WriteLine(gesture + ": Trajectory does not match");
-                                break;
-                            }
+                                
                         }
                     }
                 }
             }
             foreach (var comb in possible_combinations)
             {
-                if (optimal_length[possible_combinations.IndexOf(comb)] == stroke_count.Length)
+                if (comb.Count == max_stroke)
                 {
                     List<int[]> best_combination = new List<int[]>();
                     time_lapse = 0;
-                    foreach (var s in allStrokes)
+                    foreach (var s in comb)
                     {
-                        foreach (var point in s)
+                        foreach (var point in allStrokes[s])
                         {
                             point[2] += time_lapse;
                         }
-                        time_lapse = s.Last()[2];
-                        best_combination.AddRange(s);
+                        time_lapse = allStrokes[s].Last()[2];
+                        best_combination.AddRange(allStrokes[s]);
                     }
                     var trajectory = new StrokeData(global_user, best_combination);
                     var result = cs.recognizeGesture(trajectory);
