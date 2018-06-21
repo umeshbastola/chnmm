@@ -14,9 +14,10 @@ namespace MultiStrokeGestureRecognitionLib
 {
     public class Program
     {
+        private static Dictionary<string, int> result_matrix;
         public static void Main()
         {
-            
+
             var param1 = new IntParamVariation("nAreaForStrokeMap", 10, 5, 20);
             var param2 = new DoubleParamVariation("minRadiusArea", 0.01);
             var param3 = new DoubleParamVariation("toleranceFactorArea", 1.7, 0.2, 2.1);
@@ -58,7 +59,7 @@ namespace MultiStrokeGestureRecognitionLib
             //foreach (var set in configSet)
             //{
             bool head = true;
-            var file_name = "../../recognition/";
+            var file_name = "../../rec_non_brute/";
             file_name += "tol_" + set.toleranceFactorArea;
             file_name += "_dist_" + set.distEstName;
             file_name += "_nArea_" + set.nAreaForStrokeMap;
@@ -128,25 +129,33 @@ namespace MultiStrokeGestureRecognitionLib
                 Console.WriteLine("User=========================================================" + global_user);
                 foreach (DataRow gesture in gesture_table.Rows)
                 {
-                    List<List<int[]>> allStrokes = new List<List<int[]>>();
-                    command.CommandText = "SELECT * FROM trajectories WHERE user_id = " + global_user + " AND gesture_id=" + gesture["id"] + " AND exec_num % 2 = 0 ORDER BY exec_num,stroke_seq";
+                    result_matrix = new Dictionary<string, int>();
+                    for (int u = 1; u < 12; u++)
+                    {
+                        for (int g = 1; g < 15; g++)
+                        {
+                            result_matrix.Add(u + "-" + g, 0);
+                        }
+                    }
+                    result_matrix.Add("err", 0);
+
+                    command.CommandText = "SELECT * FROM trajectories WHERE user_id = " + global_user + " AND gesture_id=" + gesture["id"] + " AND exec_num % 2 = 0 ORDER BY exec_num";
                     NpgsqlDataReader reader = command.ExecuteReader();
                     DataTable dt = new DataTable();
                     dt.Load(reader);
                     reader.Close();
                     int maxstroke = (int)dt.Compute("MAX([stroke_seq])", "") + 1;
+                    List<int[]>[] allStrokes = new List<int[]>[maxstroke];
                     var prev_exec = (int)dt.Rows[0]["exec_num"];
-                    var prev_stroke = 0;
-
 
                     foreach (DataRow row in dt.Rows)
                     {
                         var accumulate = new List<int[]>();
                         if (prev_exec != Convert.ToInt32(row["exec_num"]))
                         {
-                            calculate_result(maxstroke, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
+                            calculate_result(allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
                             prev_exec = Convert.ToInt32(row["exec_num"]);
-                            allStrokes.Clear();
+                            allStrokes = new List<int[]>[maxstroke];
                         }
                         string[,] db_points = row["points"] as string[,];
                         int trace = Convert.ToInt32(row["stroke_seq"]);
@@ -161,12 +170,30 @@ namespace MultiStrokeGestureRecognitionLib
                             single_pt[3] = trace;
                             accumulate.Add(single_pt);
                         }
-                        allStrokes.Add(accumulate);
+                        allStrokes[trace] = accumulate;
                     }
-                    if (allStrokes.Count > 0)
+                    if (allStrokes[0] != null)
                     {
-                        calculate_result(maxstroke, allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
+                        calculate_result(allStrokes, global_user, Convert.ToInt32(gesture["id"]), set, cs);
                     }
+                    string row_val = "";
+                    string header = "";
+                    for (int u = 1; u < 12; u++)
+                    {
+                        for (int g = 1; g < 15; g++)
+                        {
+                            header += u + "-" + g + ",";
+                            row_val += result_matrix[u + "-" + g] + ",";
+                        }
+                    }
+                    row_val += result_matrix["err"];
+                    if (head)
+                    {
+                        sb.AppendLine(header);
+                        head = false;
+                    }
+                    sb.AppendLine(row_val);
+                    File.WriteAllText(file_name, sb.ToString());
                 }
             }
         }
@@ -178,27 +205,27 @@ namespace MultiStrokeGestureRecognitionLib
                     (t1, t2) => t1.Concat(new T[] { t2 }));
         }
 
-        static public void calculate_result(int max_stroke, List<List<int[]>> allStrokes, int global_user, int gesture, CHnMMParameter set, CHnMMClassificationSystem cs)
+        static public void calculate_result(List<int[]>[] allStrokes, int global_user, int gesture, CHnMMParameter set, CHnMMClassificationSystem cs)
         {
-            int[] stroke_count = Enumerable.Range(0, allStrokes.Count).ToArray();
+            int[] match_length = Enumerable.Range(0, allStrokes.Length).ToArray();
             var time_lapse = 0;
             List<List<int>> possible_combinations = new List<List<int>>();
-            for (int i = 0; i < max_stroke; i++)
+            for (int i = 0; i < allStrokes.Length; i++)
             {
                 var trajectory = new StrokeData(global_user, allStrokes[i]);
-                var current_length = cs.checkFeasibility(trajectory, set.nAreaForStrokeMap);
+                var current_length = cs.checkFeasibility(0, trajectory, set.nAreaForStrokeMap);
                 if (current_length > 0)
+                {
                     possible_combinations.Add(new List<int> { i });
+                }
             }
             if (possible_combinations.Count > 0)
             {
-
-
                 for (int comb = 0; comb < possible_combinations.Count; comb++)
                 {
-                    for (int i = 0; i < max_stroke; i++)
+                    for (int i = 0; i < allStrokes.Length; i++)
                     {
-                    List<int[]> best_combination = new List<int[]>();
+                        List<int[]> best_combination = new List<int[]>();
                         var strech = new List<int>();
                         for (int p = 0; p < possible_combinations[comb].Count; p++)
                         {
@@ -209,19 +236,20 @@ namespace MultiStrokeGestureRecognitionLib
                         {
                             best_combination.AddRange(allStrokes[i]);
                             var trajectory = new StrokeData(global_user, best_combination);
-                            var current_length = cs.checkFeasibility(trajectory, set.nAreaForStrokeMap);
-                            if (current_length > possible_combinations[comb].Count){
+                            var current_length = cs.checkFeasibility(possible_combinations[comb].Count, trajectory, set.nAreaForStrokeMap);
+                            if (current_length > possible_combinations[comb].Count)
+                            {
                                 strech.Add(i);
                                 possible_combinations.Add(strech);
                             }
-                                
+
                         }
                     }
                 }
             }
             foreach (var comb in possible_combinations)
             {
-                if (comb.Count == max_stroke)
+                if (comb.Count == allStrokes.Length)
                 {
                     List<int[]> best_combination = new List<int[]>();
                     time_lapse = 0;
@@ -236,10 +264,14 @@ namespace MultiStrokeGestureRecognitionLib
                     }
                     var trajectory = new StrokeData(global_user, best_combination);
                     var result = cs.recognizeGesture(trajectory);
-                    if (result == null)
-                        Console.WriteLine(gesture + ": Not Recognized");
-                    else
+                    if (result != null && result.Split(':')[0] != global_user+"-"+gesture){
+                        result_matrix[result.Split(':')[0]] += 1;
                         Console.WriteLine(gesture + ": " + result);
+                    }
+                    else if(result == null){
+                        Console.WriteLine(gesture + ": Not Recognized");
+                        result_matrix["err"] += 1;
+                    }
                 }
             }
         }
