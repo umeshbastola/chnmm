@@ -16,7 +16,6 @@ namespace MultiStrokeGestureRecognitionLib
             TrajectoryPoints = convertPoints(points).ToArray();
         }
 
-
         public static IEnumerable<TrajectoryPoint> convertPoints(List<int[]> points)
         {
             foreach (var point in points)

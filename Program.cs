@@ -264,11 +264,13 @@ namespace MultiStrokeGestureRecognitionLib
                     }
                     var trajectory = new StrokeData(global_user, best_combination);
                     var result = cs.recognizeGesture(trajectory);
-                    if (result != null && result.Split(':')[0] != global_user+"-"+gesture){
+                    if (result != null && result.Split(':')[0] != global_user + "-" + gesture)
+                    {
                         result_matrix[result.Split(':')[0]] += 1;
                         Console.WriteLine(gesture + ": " + result);
                     }
-                    else if(result == null){
+                    else if (result == null)
+                    {
                         Console.WriteLine(gesture + ": Not Recognized");
                         result_matrix["err"] += 1;
                     }
