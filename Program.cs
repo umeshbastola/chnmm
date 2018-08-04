@@ -48,7 +48,7 @@ namespace MultiStrokeGestureRecognitionLib
             }
             NpgsqlCommand command = connection.CreateCommand();
             //#########################################################
-            //GESTURE RECOGNITION//
+            //GESTURE VERIFICATION//
             //#########################################################
 
             command.CommandText = "SELECT id FROM Tgestures";
@@ -65,7 +65,7 @@ namespace MultiStrokeGestureRecognitionLib
                 tu_sp_match_tm_mis = 0;
                 ok = 0;
                 bool head = true;
-                var file_name = "../../single_model_identify/";
+                var file_name = "../../single_model_verify/";
                 file_name += "tol_" + set.toleranceFactorArea;
                 file_name += "_dist_" + set.distEstName;
                 file_name += "_nArea_" + set.nAreaForStrokeMap;
@@ -138,7 +138,7 @@ namespace MultiStrokeGestureRecognitionLib
                         cs.trainGesture(gestureName, gestureStrokes.Cast<BaseTrajectory>());
 
                         // ################  TRAIN COMPLETE ################# 
-                        // ################  RECOGNITION TASK STARTS ###############
+                        // ################  VERIFICATION TASK STARTS ###############
 
                         command.CommandText = "SELECT * FROM trajectories WHERE gesture_id=" + gesture["id"] + "ORDER BY user_id,exec_num";
                         reader = command.ExecuteReader();
@@ -202,7 +202,7 @@ namespace MultiStrokeGestureRecognitionLib
                         sb.AppendLine(row_val);
                     }
                 }
-                //Console.Write("----" + total_misclass + "--------" + total_unclass + "--------" + tu_sp_match_tm_mis + "--------" + fu_sp_match_tm_mis+ "--------" + ok+ "--------");
+                Console.Write("----" + total_misclass + "--------" + total_unclass + "--------" + tu_sp_match_tm_mis + "--------" + fu_sp_match_tm_mis+ "--------" + ok+ "--------");
                 Console.WriteLine("");
                 File.WriteAllText(file_name, sb.ToString());
             }
